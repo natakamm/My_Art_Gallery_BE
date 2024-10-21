@@ -17,7 +17,7 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 app.get("/", (req, res) => {
-  res.send("Welcome to the Login Tester!");
+  res.send("Welcome to the Art Gallery backend API!");
 });
 
 app.use("/user", user);
