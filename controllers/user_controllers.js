@@ -1,25 +1,25 @@
 const User = require("../schemas/User");
 const createToken = require("../services/tokenService");
 
-const loginUser = async (req, res) => {
+const loginUser = async (req, res, next) => {
   const { identifier, password } = req.body;
   try {
     const user = await User.login(identifier, password);
     const token = createToken(user._id, user.username);
     return res.status(200).json({ username: user.username, token });
   } catch (error) {
-    return res.status(400).json({ error: error.message });
+    next(error);
   }
 };
 
-const signUpUser = async (req, res) => {
+const signUpUser = async (req, res, next) => {
   const { email, password, username } = req.body;
   try {
     const user = await User.signup(email, password, username);
     const token = createToken(user._id, user.username);
     return res.status(200).json({ username, token });
   } catch (error) {
-    return res.status(400).json({ error: error.message });
+    next(error);
   }
 };
 

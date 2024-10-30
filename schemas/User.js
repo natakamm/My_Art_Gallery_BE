@@ -39,25 +39,35 @@ userSchema.statics.signup = async function (email, password, username) {
   const usernameExists = await this.findOne({ username, isActive: true });
 
   if (emailExists) {
-    throw Error("Email already in use.");
+    const error = Error("Email already in use.");
+    error.status = 400;
+    throw error;
   }
 
   if (usernameExists) {
-    throw Error("Username is already taken.");
+    const error = Error("Username is already taken.");
+    error.status = 400;
+    throw error;
   }
 
   if (!email || !password || !username) {
-    throw Error("All fields must be filled.");
+    const error = Error("All fields must be filled.");
+    error.status = 400;
+    throw error;
   }
 
   if (!validator.isEmail(email)) {
-    throw Error("Email is not valid.");
+    const error = Error("Email is not valid.");
+    error.status = 400;
+    throw error;
   }
 
   if (!validator.isStrongPassword(password)) {
-    throw Error(
+    const error = Error(
       "Make sure to use at least 8 characters, one upper case letter, a number and a symbol."
     );
+    error.status = 400;
+    throw error;
   }
 
   const salt = await bcrypt.genSalt(10);
@@ -71,7 +81,9 @@ userSchema.statics.signup = async function (email, password, username) {
 
 userSchema.statics.login = async function (identifier, password) {
   if (!identifier || !password) {
-    throw Error("All fields must be filled");
+    const error = new Error("All fields must be filled");
+    error.status = 400; // Bad Request
+    throw error;
   }
 
   const user = await this.findOne({
@@ -80,13 +92,17 @@ userSchema.statics.login = async function (identifier, password) {
   });
 
   if (!user) {
-    throw Error("Incorrect username or email.");
+    const error = new Error("Incorrect username or email.");
+    error.status = 401; // Unauthorized
+    throw error;
   }
 
   const match = await bcrypt.compare(password, user.password);
 
   if (!match) {
-    throw Error("Incorrect password");
+    const error = new Error("Incorrect password");
+    error.status = 401; // Unauthorized
+    throw error;
   }
 
   return user;
