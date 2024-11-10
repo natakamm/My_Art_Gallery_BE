@@ -116,6 +116,32 @@ const getAllProjects = async (req, res) => {
   }
 };
 
+const getOneUsersProjects = async (req, res) => {
+  const { userId } = req.params;
+  try {
+    const projects = await Project.find({ user: userId })
+      .populate({
+        path: "user",
+        match: { isActive: true }, // Only populate active users
+        select: "username avatar isActive",
+      })
+      .populate({
+        path: "likes",
+        select: "username avatar",
+      });
+
+    if (!projects.length) {
+      return res
+        .status(404)
+        .json({ message: "There are no projects for this user." });
+    }
+
+    res.status(200).json(projects);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
 const updateTitleAndDescription = async (req, res) => {
   const { projectId } = req.params;
   const { description, title } = req.body;
@@ -291,11 +317,16 @@ const likeProject = async (req, res) => {
     project.likes.push(userId);
     await project.save();
 
-    await User.findByIdAndUpdate(userId, {
-      $addToSet: { favorites: projectId },
-    });
+    const user = await User.findByIdAndUpdate(
+      userId,
+      { $addToSet: { favorites: projectId } },
+      { new: true }
+    ).select("favorites");
 
-    res.status(200).json({ message: "Project liked successfully.", project });
+    res.status(200).json({
+      message: "Project liked successfully.",
+      updatedFavorites: user.favorites, // Return the updated favorites array
+    });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -320,13 +351,16 @@ const unlikeProject = async (req, res) => {
     project.likes.pull(userId);
     await project.save();
 
-    await User.findByIdAndUpdate(userId, {
-      $pull: { favorites: projectId },
-    });
+    const user = await User.findByIdAndUpdate(
+      userId,
+      { $pull: { favorites: projectId } },
+      { new: true }
+    ).select("favorites");
 
-    res
-      .status(200)
-      .json({ message: "Project removed from likes successfully." });
+    res.status(200).json({
+      message: "Project removed from likes successfully.",
+      updatedFavorites: user.favorites,
+    });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -345,4 +379,5 @@ module.exports = {
   createProject,
   likeProject,
   unlikeProject,
+  getOneUsersProjects,
 };

@@ -11,6 +11,7 @@ const {
   updateMainImage,
   deleteProject,
   createProject,
+  getOneUsersProjects,
   likeProject,
   unlikeProject,
   addImagesToGallery,
@@ -23,6 +24,7 @@ const app = express.Router();
 // Public routes
 app.get("/all-projects", getAllProjects);
 app.get("/all-projects/:projectId", getOneProject);
+app.get("/all-projects/user/:userId", getOneUsersProjects);
 
 app.use(requireAuth);
 
