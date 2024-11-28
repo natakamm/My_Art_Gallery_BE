@@ -27,7 +27,9 @@ const getUser = async (req, res) => {
   try {
     const user = await User.findById(req.user._id)
       .populate("favorites")
-      .populate("savedBlogs");
+      .populate("savedBlogs")
+      .populate("followers", "username avatar")
+      .populate("following", "username avatar");
     if (!user) {
       return res.status(404).json({ error: "User not found" });
     }
@@ -58,7 +60,9 @@ const getOtherUser = async (req, res) => {
     )
       .lean()
       .populate("favorites")
-      .populate("savedBlogs");
+      .populate("savedBlogs")
+      .populate("followers", "username avatar")
+      .populate("following", "username avatar");
     if (!user) {
       return res.status(404).json({ message: "User not found." });
     }
@@ -69,12 +73,32 @@ const getOtherUser = async (req, res) => {
 };
 
 const editUserDetails = async (req, res) => {
-  const { email, username } = req.body;
+  const { email, username, description, location, website } = req.body;
 
   try {
+    if (email) {
+      const existingUserByEmail = await User.findOne({ email });
+      if (
+        existingUserByEmail &&
+        existingUserByEmail._id.toString() !== req.user._id.toString()
+      ) {
+        return res.status(400).json({ error: "Email is already in use" });
+      }
+    }
+
+    if (username) {
+      const existingUserByUsername = await User.findOne({ username });
+      if (
+        existingUserByUsername &&
+        existingUserByUsername._id.toString() !== req.user._id.toString()
+      ) {
+        return res.status(400).json({ error: "Username is already in use" });
+      }
+    }
+
     const user = await User.findByIdAndUpdate(
       req.user._id,
-      { email, username },
+      { email, username, description, location, website },
       { new: true, runValidators: true }
     );
     if (!user) {
@@ -124,6 +148,52 @@ const deleteUser = async (req, res) => {
   }
 };
 
+const followUser = async (req, res) => {
+  const { userId } = req.params;
+  const currentUser = req.user._id;
+
+  try {
+    const userToFollow = await User.findById(userId);
+    if (!userToFollow) {
+      return res.status(404).json({ message: "User not found." });
+    }
+
+    if (userToFollow.followers.includes(currentUser)) {
+      return res
+        .status(400)
+        .json({ message: "You are already following this user." });
+    }
+
+    userToFollow.followers.push(currentUser);
+
+    const currentUserRecord = await User.findById(currentUser);
+    currentUserRecord.following.push(userId);
+    await currentUserRecord.save();
+
+    return res.status(200).json({ message: "Followed successfully" });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+const unfollowUser = async (req, res) => {
+  const { userId } = req.params;
+  const currentUser = req.user._id;
+  try {
+    const userToUnfollow = await User.findById(userId);
+    userToUnfollow.followers.pull(currentUser);
+    await userToUnfollow.save();
+
+    const currentUserRecord = await User.findById(currentUser);
+    currentUserRecord.following.pull(userId);
+    await currentUserRecord.save();
+
+    return res.status(200).json({ message: "Unfollowed successfully" });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
 module.exports = {
   loginUser,
   signUpUser,
@@ -133,4 +203,6 @@ module.exports = {
   editUserDetails,
   getOtherUser,
   deleteUser,
+  unfollowUser,
+  followUser,
 };

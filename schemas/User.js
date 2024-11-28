@@ -32,6 +32,24 @@ const userSchema = Schema({
     type: Boolean,
     default: true,
   },
+  followers: [{ type: Schema.Types.ObjectId, ref: "User" }], // Users following this user
+  following: [{ type: Schema.Types.ObjectId, ref: "User" }],
+  location: {
+    type: String,
+    minLength: 1,
+    required: false,
+  },
+  website: {
+    type: String,
+    minLength: 1,
+    required: false,
+    validate: [validator.isURL, "Invalid website URL"],
+  },
+  description: {
+    type: String,
+    minLength: 1,
+    required: false,
+  },
 });
 
 userSchema.statics.signup = async function (email, password, username) {

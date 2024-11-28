@@ -10,6 +10,8 @@ const {
   editUserDetails,
   getOtherUser,
   deleteUser,
+  unfollowUser,
+  followUser,
 } = require("../controllers/user_controllers");
 
 const app = express.Router();
@@ -21,10 +23,13 @@ app.get("/all", getAllUsers);
 app.get("/:userId", getOtherUser);
 
 // Protected routes (authentication required)
-app.use(requireAuth); // Apply the middleware here to protect the following routes
+app.use(requireAuth);
+
 app.get("/", getUser);
 app.put("/profile/avatar", upload.single("avatar"), editAvatar);
 app.put("/profile/details", editUserDetails);
 app.delete("/delete-account", deleteUser);
+app.put("/follow/:userId", followUser);
+app.put("unfollow/:userId", unfollowUser);
 
 module.exports = app;
